@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 Double Deep Q-Network (DDQN)
 ============================
 
@@ -103,17 +101,10 @@ Usage
 Configuration and hyperparameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. list-table::
-    :header-rows: 1
-
-    * - Dataclass
-      - .. centered:: |_4| |pytorch| |_4|
-      - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
-    * - ``DDQN_CFG``
-      - :py:class:`~skrl.agents.torch.ddqn.DDQN_CFG`
-      - :py:class:`~skrl.agents.jax.ddqn.DDQN_CFG`
-      -
+.. literalinclude:: ../../../../skrl/agents/torch/dqn/ddqn.py
+    :language: python
+    :start-after: [start-config-dict-torch]
+    :end-before: [end-config-dict-torch]
 
 .. raw:: html
 
@@ -190,27 +181,22 @@ Support for advanced features is described in the next table
       - Support and remarks
       - .. centered:: |_4| |pytorch| |_4|
       - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
     * - Shared model
       - \-
-      - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
     * - RNN support
       - \-
       - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
-      - .. centered:: :math:`\square`
     * - Mixed precision
       - Automatic mixed precision
       - .. centered:: :math:`\blacksquare`
-      - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
     * - Distributed
       - Single Program Multi Data (SPMD) multi-GPU
       - .. centered:: :math:`\blacksquare`
       - .. centered:: :math:`\blacksquare`
-      - .. centered:: :math:`\square`
 
 .. raw:: html
 
@@ -219,12 +205,9 @@ Support for advanced features is described in the next table
 API (PyTorch)
 -------------
 
-.. autoclass:: skrl.agents.torch.ddqn.DDQN_CFG
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.agents.torch.dqn.DDQN_DEFAULT_CONFIG
 
-.. autoclass:: skrl.agents.torch.ddqn.DDQN
+.. autoclass:: skrl.agents.torch.dqn.DDQN
     :undoc-members:
     :show-inheritance:
     :private-members: _update
@@ -237,12 +220,9 @@ API (PyTorch)
 API (JAX)
 ---------
 
-.. autoclass:: skrl.agents.jax.ddqn.DDQN_CFG
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.agents.jax.dqn.DDQN_DEFAULT_CONFIG
 
-.. autoclass:: skrl.agents.jax.ddqn.DDQN
+.. autoclass:: skrl.agents.jax.dqn.DDQN
     :undoc-members:
     :show-inheritance:
     :private-members: _update

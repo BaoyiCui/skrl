@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 Shared model
 ============
 
@@ -65,5 +63,3 @@ The code snippet below shows how to define a shared model. The following practic
                     :language: python
                     :start-after: [start-mlp-multi-forward-pass-torch]
                     :end-before: [end-mlp-multi-forward-pass-torch]
-
-    .. group-tab:: |_4| |warp| |_4|

@@ -1,8 +1,6 @@
-from __future__ import annotations
+from typing import Any, Mapping, Optional, Tuple, Union
 
-from typing import Any
-
-import functools
+import copy
 import gymnasium
 
 import jax
@@ -15,63 +13,86 @@ from skrl.agents.jax import Agent
 from skrl.memories.jax import Memory
 from skrl.models.jax import Model
 from skrl.resources.optimizers.jax import Adam
-from skrl.utils import ScopedTimer
-
-from .cem_cfg import CEM_CFG
 
 
-@functools.partial(jax.jit, static_argnames=("policy_act", "n"))
-def _update_policy(policy_act, policy_state_dict, inputs, elite_actions, n):
-    # compute policy loss
-    def _policy_loss(params):
-        # compute scores for the elite observations/states
-        _, outputs = policy_act(inputs, role="policy", params=params)
-        scores = outputs["net_output"]
+# fmt: off
+# [start-config-dict-jax]
+CEM_DEFAULT_CONFIG = {
+    "rollouts": 16,                 # number of rollouts before updating
+    "percentile": 0.70,             # percentile to compute the reward bound [0, 1]
 
-        # HACK: return optax.softmax_cross_entropy_with_integer_labels(scores, elite_actions).mean()
-        labels = jax.nn.one_hot(elite_actions, n)
-        return optax.softmax_cross_entropy(scores, labels).mean()
+    "discount_factor": 0.99,        # discount factor (gamma)
 
-    policy_loss, grad = jax.value_and_grad(_policy_loss, has_aux=False)(policy_state_dict.params)
+    "learning_rate": 1e-2,          # learning rate
+    "learning_rate_scheduler": None,        # learning rate scheduler function (see optax.schedules)
+    "learning_rate_scheduler_kwargs": {},   # learning rate scheduler's kwargs (e.g. {"step_size": 1e-3})
 
-    return grad, policy_loss
+    "state_preprocessor": None,             # state preprocessor class (see skrl.resources.preprocessors)
+    "state_preprocessor_kwargs": {},        # state preprocessor's kwargs (e.g. {"size": env.observation_space})
+
+    "random_timesteps": 0,          # random exploration steps
+    "learning_starts": 0,           # learning starts after this many steps
+
+    "rewards_shaper": None,         # rewards shaping function: Callable(reward, timestep, timesteps) -> reward
+
+    "experiment": {
+        "directory": "",            # experiment's parent directory
+        "experiment_name": "",      # experiment name
+        "write_interval": "auto",   # TensorBoard writing interval (timesteps)
+
+        "checkpoint_interval": "auto",      # interval for checkpoints (timesteps)
+        "store_separately": False,          # whether to store checkpoints separately
+
+        "wandb": False,             # whether to use Weights & Biases
+        "wandb_kwargs": {}          # wandb kwargs (see https://docs.wandb.ai/ref/python/init)
+    }
+}
+# [end-config-dict-jax]
+# fmt: on
 
 
 class CEM(Agent):
     def __init__(
         self,
-        *,
-        models: dict[str, Model],
-        memory: Memory | None = None,
-        observation_space: gymnasium.Space | None = None,
-        state_space: gymnasium.Space | None = None,
-        action_space: gymnasium.Space | None = None,
-        device: str | jax.Device | None = None,
-        cfg: CEM_CFG | dict = {},
+        models: Mapping[str, Model],
+        memory: Optional[Union[Memory, Tuple[Memory]]] = None,
+        observation_space: Optional[Union[int, Tuple[int], gymnasium.Space]] = None,
+        action_space: Optional[Union[int, Tuple[int], gymnasium.Space]] = None,
+        device: Optional[Union[str, jax.Device]] = None,
+        cfg: Optional[dict] = None,
     ) -> None:
-        """Cross-Entropy Method (CEM).
+        """Cross-Entropy Method (CEM)
 
         https://ieeexplore.ieee.org/abstract/document/6796865/
 
-        :param models: Agent's models.
-        :param memory: Memory to storage agent's data and environment transitions.
-        :param observation_space: Observation space.
-        :param state_space: State space.
-        :param action_space: Action space.
-        :param device: Data allocation and computation device. If not specified, the default device will be used.
-        :param cfg: Agent's configuration.
+        :param models: Models used by the agent
+        :type models: dictionary of skrl.models.jax.Model
+        :param memory: Memory to storage the transitions.
+                       If it is a tuple, the first element will be used for training and
+                       for the rest only the environment transitions will be added
+        :type memory: skrl.memory.jax.Memory, list of skrl.memory.jax.Memory or None
+        :param observation_space: Observation/state space or shape (default: ``None``)
+        :type observation_space: int, tuple or list of int, gymnasium.Space or None, optional
+        :param action_space: Action space or shape (default: ``None``)
+        :type action_space: int, tuple or list of int, gymnasium.Space or None, optional
+        :param device: Device on which a tensor/array is or will be allocated (default: ``None``).
+                       If None, the device will be either ``"cuda"`` if available or ``"cpu"``
+        :type device: str or jax.Device, optional
+        :param cfg: Configuration dictionary
+        :type cfg: dict
 
-        :raises KeyError: If a configuration key is missing.
+        :raises KeyError: If the models dictionary is missing a required key
         """
-        self.cfg: CEM_CFG
+        # _cfg = copy.deepcopy(CEM_DEFAULT_CONFIG)  # TODO: TypeError: cannot pickle 'jax.Device' object
+        _cfg = CEM_DEFAULT_CONFIG
+        _cfg.update(cfg if cfg is not None else {})
         super().__init__(
             models=models,
             memory=memory,
             observation_space=observation_space,
-            state_space=state_space,
             action_space=action_space,
             device=device,
-            cfg=CEM_CFG(**cfg) if isinstance(cfg, dict) else cfg,
+            cfg=_cfg,
         )
 
         # models
@@ -80,140 +101,149 @@ class CEM(Agent):
         # checkpoint models
         self.checkpoint_modules["policy"] = self.policy
 
+        # configuration
+        self._rollouts = self.cfg["rollouts"]
+        self._rollout = 0
+
+        self._percentile = self.cfg["percentile"]
+        self._discount_factor = self.cfg["discount_factor"]
+
+        self._learning_rate = self.cfg["learning_rate"]
+        self._learning_rate_scheduler = self.cfg["learning_rate_scheduler"]
+
+        self._state_preprocessor = self.cfg["state_preprocessor"]
+
+        self._random_timesteps = self.cfg["random_timesteps"]
+        self._learning_starts = self.cfg["learning_starts"]
+
+        self._rewards_shaper = self.cfg["rewards_shaper"]
+
+        self._episode_tracking = []
+
         # set up optimizer and learning rate scheduler
         if self.policy is not None:
-            self.learning_rate = self.cfg.learning_rate
-            # - optimizer
+            # scheduler
+            if self._learning_rate_scheduler:
+                self.scheduler = self._learning_rate_scheduler(**self.cfg["learning_rate_scheduler_kwargs"])
+            # optimizer
             with jax.default_device(self.device):
                 self.optimizer = Adam(
-                    model=self.policy, lr=self.learning_rate, scale=not self.cfg.learning_rate_scheduler
+                    model=self.policy, lr=self._learning_rate, scale=not self._learning_rate_scheduler
                 )
+
             self.checkpoint_modules["optimizer"] = self.optimizer
-            # - learning rate scheduler
-            self.scheduler = self.cfg.learning_rate_scheduler
-            if self.scheduler is not None:
-                self.scheduler = self.cfg.learning_rate_scheduler(**self.cfg.learning_rate_scheduler_kwargs)
 
         # set up preprocessors
-        # - observations
-        if self.cfg.observation_preprocessor:
-            self._observation_preprocessor = self.cfg.observation_preprocessor(
-                **self.cfg.observation_preprocessor_kwargs
-            )
-            self.checkpoint_modules["observation_preprocessor"] = self._observation_preprocessor
-        else:
-            self._observation_preprocessor = self._empty_preprocessor
-        # - states
-        if self.cfg.state_preprocessor:
-            self._state_preprocessor = self.cfg.state_preprocessor(**self.cfg.state_preprocessor_kwargs)
+        if self._state_preprocessor:
+            self._state_preprocessor = self._state_preprocessor(**self.cfg["state_preprocessor_kwargs"])
             self.checkpoint_modules["state_preprocessor"] = self._state_preprocessor
         else:
             self._state_preprocessor = self._empty_preprocessor
 
-    def init(self, *, trainer_cfg: dict[str, Any] | None = None) -> None:
-        """Initialize the agent.
-
-        :param trainer_cfg: Trainer configuration.
-        """
+    def init(self, trainer_cfg: Optional[Mapping[str, Any]] = None) -> None:
+        """Initialize the agent"""
         super().init(trainer_cfg=trainer_cfg)
-        self.enable_models_training_mode(False)
+        self.set_mode("eval")
 
         # create tensors in memory
         if self.memory is not None:
-            self.memory.create_tensor(name="observations", size=self.observation_space, dtype=jnp.float32)
-            self.memory.create_tensor(name="states", size=self.state_space, dtype=jnp.float32)
+            self.memory.create_tensor(name="states", size=self.observation_space, dtype=jnp.float32)
+            self.memory.create_tensor(name="next_states", size=self.observation_space, dtype=jnp.float32)
             self.memory.create_tensor(name="actions", size=self.action_space, dtype=jnp.int32)
             self.memory.create_tensor(name="rewards", size=1, dtype=jnp.float32)
+            self.memory.create_tensor(name="terminated", size=1, dtype=jnp.int8)
+            self.memory.create_tensor(name="truncated", size=1, dtype=jnp.int8)
 
-        self._tensors_names = ["observations", "states", "actions", "rewards"]
-
-        # create temporary variables needed for storage and computation
-        self._rollout = 0
-        self._episode_tracking = []
+        self.tensors_names = ["states", "actions", "rewards"]
 
         # set up models for just-in-time compilation with XLA
         self.policy.apply = jax.jit(self.policy.apply, static_argnums=2)
 
-    def act(
-        self, observations: jax.Array, states: jax.Array | None, *, timestep: int, timesteps: int
-    ) -> tuple[jax.Array, dict[str, Any]]:
-        """Process the environment's observations/states to make a decision (actions) using the main policy.
+    def act(self, states: Union[np.ndarray, jax.Array], timestep: int, timesteps: int) -> Union[np.ndarray, jax.Array]:
+        """Process the environment's states to make a decision (actions) using the main policy
 
-        :param observations: Environment observations.
-        :param states: Environment states.
-        :param timestep: Current timestep.
-        :param timesteps: Number of timesteps.
+        :param states: Environment's states
+        :type states: np.ndarray or jax.Array
+        :param timestep: Current timestep
+        :type timestep: int
+        :param timesteps: Number of timesteps
+        :type timesteps: int
 
-        :return: Agent output. The first component is the expected action/value returned by the agent.
-            The second component is a dictionary containing extra output values according to the model.
+        :return: Actions
+        :rtype: np.ndarray or jax.Array
         """
-        inputs = {
-            "observations": self._observation_preprocessor(observations),
-            "states": self._state_preprocessor(states),
-        }
         # sample random actions
         # TODO, check for stochasticity
-        if timestep < self.cfg.random_timesteps:
-            return self.policy.random_act(inputs, role="policy")
+        if timestep < self._random_timesteps:
+            return self.policy.random_act({"states": self._state_preprocessor(states)}, role="policy")
 
         # sample stochastic actions
-        actions, outputs = self.policy.act(inputs, role="policy")
-        return actions, outputs
+        actions, _, outputs = self.policy.act({"states": self._state_preprocessor(states)}, role="policy")
+        if not self._jax:  # numpy backend
+            actions = jax.device_get(actions)
+
+        return actions, None, outputs
 
     def record_transition(
         self,
-        *,
-        observations: jax.Array,
-        states: jax.Array,
-        actions: jax.Array,
-        rewards: jax.Array,
-        next_observations: jax.Array,
-        next_states: jax.Array,
-        terminated: jax.Array,
-        truncated: jax.Array,
+        states: Union[np.ndarray, jax.Array],
+        actions: Union[np.ndarray, jax.Array],
+        rewards: Union[np.ndarray, jax.Array],
+        next_states: Union[np.ndarray, jax.Array],
+        terminated: Union[np.ndarray, jax.Array],
+        truncated: Union[np.ndarray, jax.Array],
         infos: Any,
         timestep: int,
         timesteps: int,
     ) -> None:
-        """Record an environment transition in memory.
+        """Record an environment transition in memory
 
-        :param observations: Environment observations.
-        :param states: Environment states.
-        :param actions: Actions taken by the agent.
-        :param rewards: Instant rewards achieved by the current actions.
-        :param next_observations: Next environment observations.
-        :param next_states: Next environment states.
-        :param terminated: Signals that indicate episodes have terminated.
-        :param truncated: Signals that indicate episodes have been truncated.
-        :param infos: Additional information about the environment.
-        :param timestep: Current timestep.
-        :param timesteps: Number of timesteps.
+        :param states: Observations/states of the environment used to make the decision
+        :type states: np.ndarray or jax.Array
+        :param actions: Actions taken by the agent
+        :type actions: np.ndarray or jax.Array
+        :param rewards: Instant rewards achieved by the current actions
+        :type rewards: np.ndarray or jax.Array
+        :param next_states: Next observations/states of the environment
+        :type next_states: np.ndarray or jax.Array
+        :param terminated: Signals to indicate that episodes have terminated
+        :type terminated: np.ndarray or jax.Array
+        :param truncated: Signals to indicate that episodes have been truncated
+        :type truncated: np.ndarray or jax.Array
+        :param infos: Additional information about the environment
+        :type infos: Any type supported by the environment
+        :param timestep: Current timestep
+        :type timestep: int
+        :param timesteps: Number of timesteps
+        :type timesteps: int
         """
         super().record_transition(
-            observations=observations,
-            states=states,
-            actions=actions,
-            rewards=rewards,
-            next_observations=next_observations,
-            next_states=next_states,
-            terminated=terminated,
-            truncated=truncated,
-            infos=infos,
-            timestep=timestep,
-            timesteps=timesteps,
+            states, actions, rewards, next_states, terminated, truncated, infos, timestep, timesteps
         )
 
         if self.memory is not None:
             # reward shaping
-            if self.cfg.rewards_shaper is not None:
-                rewards = self.cfg.rewards_shaper(rewards, timestep, timesteps)
+            if self._rewards_shaper is not None:
+                rewards = self._rewards_shaper(rewards, timestep, timesteps)
 
+            # storage transition in memory
             self.memory.add_samples(
-                observations=observations,
                 states=states,
                 actions=actions,
                 rewards=rewards,
+                next_states=next_states,
+                terminated=terminated,
+                truncated=truncated,
             )
+            for memory in self.secondary_memories:
+                memory.add_samples(
+                    states=states,
+                    actions=actions,
+                    rewards=rewards,
+                    next_states=next_states,
+                    terminated=terminated,
+                    truncated=truncated,
+                )
 
         # track episodes internally
         if self._rollout:
@@ -227,50 +257,51 @@ class CEM(Agent):
         else:
             self._episode_tracking = [[0] for _ in range(rewards.shape[-1])]
 
-    def pre_interaction(self, *, timestep: int, timesteps: int) -> None:
-        """Method called before the interaction with the environment.
+    def pre_interaction(self, timestep: int, timesteps: int) -> None:
+        """Callback called before the interaction with the environment
 
-        :param timestep: Current timestep.
-        :param timesteps: Number of timesteps.
+        :param timestep: Current timestep
+        :type timestep: int
+        :param timesteps: Number of timesteps
+        :type timesteps: int
         """
         pass
 
-    def post_interaction(self, *, timestep: int, timesteps: int) -> None:
-        """Method called after the interaction with the environment.
+    def post_interaction(self, timestep: int, timesteps: int) -> None:
+        """Callback called after the interaction with the environment
 
-        :param timestep: Current timestep.
-        :param timesteps: Number of timesteps.
+        :param timestep: Current timestep
+        :type timestep: int
+        :param timesteps: Number of timesteps
+        :type timesteps: int
         """
         self._rollout += 1
-        if not self._rollout % self.cfg.rollouts and timestep >= self.cfg.learning_starts:
+        if not self._rollout % self._rollouts and timestep >= self._learning_starts:
             self._rollout = 0
-            with ScopedTimer() as timer:
-                self.enable_models_training_mode(True)
-                self.update(timestep=timestep, timesteps=timesteps)
-                self.enable_models_training_mode(False)
-                self.track_data("Stats / Algorithm update time (ms)", timer.elapsed_time_ms)
+            self.set_mode("train")
+            self._update(timestep, timesteps)
+            self.set_mode("eval")
 
         # write tracking data and checkpoints
-        super().post_interaction(timestep=timestep, timesteps=timesteps)
+        super().post_interaction(timestep, timesteps)
 
-    def update(self, *, timestep: int, timesteps: int) -> None:
-        """Algorithm's main update step.
+    def _update(self, timestep: int, timesteps: int) -> None:
+        """Algorithm's main update step
 
-        :param timestep: Current timestep.
-        :param timesteps: Number of timesteps.
+        :param timestep: Current timestep
+        :type timestep: int
+        :param timesteps: Number of timesteps
+        :type timesteps: int
         """
         # sample all memory
-        sampled_observations, sampled_states, sampled_actions, sampled_rewards = self.memory.sample_all(
-            names=self._tensors_names
-        )[0]
+        sampled_states, sampled_actions, sampled_rewards = self.memory.sample_all(names=self.tensors_names)[0]
 
-        sampled_observations = self._observation_preprocessor(sampled_observations, train=True)
         sampled_states = self._state_preprocessor(sampled_states, train=True)
 
-        sampled_observations = jax.device_get(sampled_observations)
-        sampled_states = jax.device_get(sampled_states)
-        sampled_actions = jax.device_get(sampled_actions)
-        sampled_rewards = jax.device_get(sampled_rewards)
+        if self._jax:  # move to numpy backend
+            sampled_states = jax.device_get(sampled_states)
+            sampled_actions = jax.device_get(sampled_actions)
+            sampled_rewards = jax.device_get(sampled_rewards)
 
         # compute discounted return threshold
         limits = []
@@ -282,8 +313,7 @@ class CEM(Agent):
                 returns.append(
                     np.sum(
                         rewards
-                        * self.cfg.discount_factor
-                        ** np.flip(np.arange(rewards.shape[0]), axis=-1).reshape(rewards.shape)
+                        * self._discount_factor ** np.flip(np.arange(rewards.shape[0]), axis=-1).reshape(rewards.shape)
                     )
                 )
 
@@ -292,38 +322,35 @@ class CEM(Agent):
             return
 
         returns = np.array(returns)
-        return_threshold = np.quantile(returns, self.cfg.percentile, axis=-1)
+        return_threshold = np.quantile(returns, self._percentile, axis=-1)
 
-        # get elite observations/states and actions
+        # get elite states and actions
         indexes = (returns >= return_threshold).nonzero()[0]
-        elite_observations = np.concatenate(
-            [sampled_observations[limits[i][0] : limits[i][1]] for i in indexes], axis=0
-        )
-        try:
-            elite_states = np.concatenate([sampled_states[limits[i][0] : limits[i][1]] for i in indexes], axis=0)
-        except TypeError:
-            elite_states = None
+        elite_states = np.concatenate([sampled_states[limits[i][0] : limits[i][1]] for i in indexes], axis=0)
         elite_actions = np.concatenate([sampled_actions[limits[i][0] : limits[i][1]] for i in indexes], axis=0).reshape(
             -1
         )
 
         # compute policy loss
-        grad, policy_loss = _update_policy(
-            self.policy.act,
-            self.policy.state_dict,
-            {"observations": elite_observations, "states": elite_states},
-            elite_actions,
-            self.action_space.n,
-        )
+        def _policy_loss(params):
+            # compute scores for the elite states
+            _, _, outputs = self.policy.act({"states": elite_states}, "policy", params)
+            scores = outputs["net_output"]
+
+            # HACK: return optax.softmax_cross_entropy_with_integer_labels(scores, elite_actions).mean()
+            labels = jax.nn.one_hot(elite_actions, self.action_space.n)
+            return optax.softmax_cross_entropy(scores, labels).mean()
+
+        policy_loss, grad = jax.value_and_grad(_policy_loss, has_aux=False)(self.policy.state_dict.params)
 
         # optimization step (policy)
         self.optimizer = self.optimizer.step(
-            grad=grad, model=self.policy, lr=self.learning_rate if self.scheduler else None
+            grad, self.policy, self._learning_rate if self._learning_rate_scheduler else None
         )
 
         # update learning rate
-        if self.scheduler:
-            self.learning_rate *= self.scheduler(timestep)
+        if self._learning_rate_scheduler:
+            self._learning_rate *= self.scheduler(timestep)
 
         # record data
         self.track_data("Loss / Policy loss", policy_loss.item())
@@ -331,5 +358,5 @@ class CEM(Agent):
         self.track_data("Coefficient / Return threshold", return_threshold.item())
         self.track_data("Coefficient / Mean discounted returns", returns.mean().item())
 
-        if self.scheduler:
-            self.track_data("Learning / Learning rate", self.learning_rate)
+        if self._learning_rate_scheduler:
+            self.track_data("Learning / Learning rate", self._learning_rate)

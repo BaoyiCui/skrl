@@ -1,5 +1,3 @@
-:tocdepth: 4
-
 File post-processing
 ====================
 
@@ -68,10 +66,10 @@ API
 
     <br>
 
-TensorBoard files
+Tensorboard files
 -----------------
 
-This library provides an implementation for quickly loading TensorBoard files to inspect their contents in future post-processing steps. See the section :ref:`Library utilities (skrl.utils module) <library_utilities>` for a real use case
+This library provides an implementation for quickly loading Tensorboard files to inspect their contents in future post-processing steps. See the section :ref:`Library utilities (skrl.utils module) <library_utilities>` for a real use case
 
 .. raw:: html
 
@@ -80,7 +78,7 @@ This library provides an implementation for quickly loading TensorBoard files to
 Requirements
 ^^^^^^^^^^^^
 
-This utility requires the `TensorFlow <https://www.tensorflow.org/>`_ package to be installed to load and parse TensorBoard files:
+This utility requires the `TensorFlow <https://www.tensorflow.org/>`_ package to be installed to load and parse Tensorboard files:
 
 .. code-block:: bash
 
@@ -95,7 +93,7 @@ Usage
 
 .. tabs::
 
-    .. tab:: TensorBoard (events.out.tfevents.*)
+    .. tab:: Tensorboard (events.out.tfevents.*)
 
         .. literalinclude:: ../../snippets/utils_postprocessing.py
             :language: python

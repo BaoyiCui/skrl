@@ -1,28 +1,42 @@
-from __future__ import annotations
-
-from abc import ABC, abstractmethod
+from typing import Optional, Tuple, Union
 
 import torch
 
 from skrl import config
 
 
-class Noise(ABC):
-    def __init__(self, *, device: str | torch.device | None = None) -> None:
-        """Base noise class for implementing custom noises.
+class Noise:
+    def __init__(self, device: Optional[Union[str, torch.device]] = None) -> None:
+        """Base class representing a noise
 
-        :param device: Data allocation and computation device. If not specified, the default device will be used.
+        :param device: Device on which a tensor/array is or will be allocated (default: ``None``).
+                       If None, the device will be either ``"cuda"`` if available or ``"cpu"``
+        :type device: str or torch.device, optional
+
+        Custom noises should override the ``sample`` method::
+
+            import torch
+            from skrl.resources.noises.torch import Noise
+
+            class CustomNoise(Noise):
+                def __init__(self, device=None):
+                    super().__init__(device)
+
+                def sample(self, size):
+                    return torch.rand(size, device=self.device)
         """
         self.device = config.torch.parse_device(device)
 
     def sample_like(self, tensor: torch.Tensor) -> torch.Tensor:
-        """Sample noise with the same size (shape) as the input tensor.
+        """Sample a noise with the same size (shape) as the input tensor
 
-        This method will call the sampling method as follows ``.sample(tensor.shape)``.
+        This method will call the sampling method as follows ``.sample(tensor.shape)``
 
-        :param tensor: Input tensor used to determine output tensor size (shape).
+        :param tensor: Input tensor used to determine output tensor size (shape)
+        :type tensor: torch.Tensor
 
-        :return: Sampled noise.
+        :return: Sampled noise
+        :rtype: torch.Tensor
 
         Example::
 
@@ -34,14 +48,15 @@ class Noise(ABC):
         """
         return self.sample(tensor.shape)
 
-    @abstractmethod
-    def sample(self, size: list[int] | torch.Size) -> torch.Tensor:
-        """Sample noise.
+    def sample(self, size: Union[Tuple[int], torch.Size]) -> torch.Tensor:
+        """Noise sampling method to be implemented by the inheriting classes
 
-        :param size: Noise shape.
+        :param size: Shape of the sampled tensor
+        :type size: tuple or list of int, or torch.Size
 
-        :return: Sampled noise.
+        :raises NotImplementedError: The method is not implemented by the inheriting classes
 
-        :raises NotImplementedError: This method must be implemented by subclasses.
+        :return: Sampled noise
+        :rtype: torch.Tensor
         """
         raise NotImplementedError("The sampling method (.sample()) is not implemented")

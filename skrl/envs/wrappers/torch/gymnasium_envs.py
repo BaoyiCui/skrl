@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from typing import Any
+from typing import Any, Tuple
 
 import gymnasium
 
@@ -18,9 +16,10 @@ from skrl.utils.spaces.torch import (
 
 class GymnasiumWrapper(Wrapper):
     def __init__(self, env: Any) -> None:
-        """Gymnasium environment wrapper.
+        """Gymnasium environment wrapper
 
-        :param env: The environment instance to wrap.
+        :param env: The environment to wrap
+        :type env: Any supported Gymnasium environment
         """
         super().__init__(env)
 
@@ -40,32 +39,32 @@ class GymnasiumWrapper(Wrapper):
 
     @property
     def observation_space(self) -> gymnasium.Space:
-        """Observation space."""
+        """Observation space"""
         if self._vectorized:
             return self._env.single_observation_space
         return self._env.observation_space
 
     @property
     def action_space(self) -> gymnasium.Space:
-        """Action space."""
+        """Action space"""
         if self._vectorized:
             return self._env.single_action_space
         return self._env.action_space
 
-    def step(self, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Any]:
-        """Perform a step in the environment.
+    def step(self, actions: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, Any]:
+        """Perform a step in the environment
 
-        :param actions: The actions to perform.
+        :param actions: The actions to perform
+        :type actions: torch.Tensor
 
-        :return: Observation, reward, terminated, truncated, info.
+        :return: Observation, reward, terminated, truncated, info
+        :rtype: tuple of torch.Tensor and any other info
         """
         actions = untensorize_space(
             self.action_space,
             unflatten_tensorized_space(self.action_space, actions),
             squeeze_batch_dimension=not self._vectorized,
         )
-        if self._vectorized and isinstance(self.action_space, gymnasium.spaces.Discrete):
-            actions = actions.flatten()
 
         observation, reward, terminated, truncated, info = self._env.step(actions)
 
@@ -82,22 +81,11 @@ class GymnasiumWrapper(Wrapper):
 
         return observation, reward, terminated, truncated, info
 
-    def state(self) -> torch.Tensor | None:
-        """Get the environment state.
+    def reset(self) -> Tuple[torch.Tensor, Any]:
+        """Reset the environment
 
-        :return: State.
-        """
-        try:
-            return flatten_tensorized_space(
-                tensorize_space(self.state_space, self._unwrapped.state(), device=self.device)
-            )
-        except:
-            return None
-
-    def reset(self) -> tuple[torch.Tensor, dict[str, Any]]:
-        """Reset the environment.
-
-        :return: Observation, info.
+        :return: Observation, info
+        :rtype: torch.Tensor and any other info
         """
         # handle vectorized environments (vector environments are autoreset)
         if self._vectorized:
@@ -114,11 +102,11 @@ class GymnasiumWrapper(Wrapper):
         return observation, info
 
     def render(self, *args, **kwargs) -> Any:
-        """Render the environment."""
+        """Render the environment"""
         if self._vectorized:
             return self._env.call("render", *args, **kwargs)
         return self._env.render(*args, **kwargs)
 
     def close(self) -> None:
-        """Close the environment."""
+        """Close the environment"""
         self._env.close()

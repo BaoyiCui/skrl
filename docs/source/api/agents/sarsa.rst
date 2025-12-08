@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 State Action Reward State Action (SARSA)
 ========================================
 
@@ -78,17 +76,10 @@ Usage
 Configuration and hyperparameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. list-table::
-    :header-rows: 1
-
-    * - Dataclass
-      - .. centered:: |_4| |pytorch| |_4|
-      - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
-    * - ``SARSA_CFG``
-      - :py:class:`~skrl.agents.torch.sarsa.SARSA_CFG`
-      -
-      -
+.. literalinclude:: ../../../../skrl/agents/torch/sarsa/sarsa.py
+    :language: python
+    :start-after: [start-config-dict-torch]
+    :end-before: [end-config-dict-torch]
 
 .. raw:: html
 
@@ -150,10 +141,7 @@ The implementation uses 1 table. This table (model) must be collected in a dicti
 API (PyTorch)
 -------------
 
-.. autoclass:: skrl.agents.torch.sarsa.SARSA_CFG
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.agents.torch.sarsa.SARSA_DEFAULT_CONFIG
 
 .. autoclass:: skrl.agents.torch.sarsa.SARSA
     :undoc-members:

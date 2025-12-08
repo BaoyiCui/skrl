@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 Advantage Actor Critic (A2C)
 ============================
 
@@ -143,17 +141,10 @@ Usage
 Configuration and hyperparameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. list-table::
-    :header-rows: 1
-
-    * - Dataclass
-      - .. centered:: |_4| |pytorch| |_4|
-      - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
-    * - ``A2C_CFG``
-      - :py:class:`~skrl.agents.torch.a2c.A2C_CFG`
-      - :py:class:`~skrl.agents.jax.a2c.A2C_CFG`
-      -
+.. literalinclude:: ../../../../skrl/agents/torch/a2c/a2c.py
+    :language: python
+    :start-after: [start-config-dict-torch]
+    :end-before: [end-config-dict-torch]
 
 .. raw:: html
 
@@ -233,27 +224,22 @@ Support for advanced features is described in the next table
       - Support and remarks
       - .. centered:: |_4| |pytorch| |_4|
       - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
     * - Shared model
       - for Policy and Value
       - .. centered:: :math:`\blacksquare`
-      - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
     * - RNN support
       - RNN, LSTM, GRU and any other variant
       - .. centered:: :math:`\blacksquare`
       - .. centered:: :math:`\square`
-      - .. centered:: :math:`\square`
     * - Mixed precision
       - Automatic mixed precision
       - .. centered:: :math:`\blacksquare`
-      - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
     * - Distributed
       - Single Program Multi Data (SPMD) multi-GPU
       - .. centered:: :math:`\blacksquare`
       - .. centered:: :math:`\blacksquare`
-      - .. centered:: :math:`\square`
 
 .. raw:: html
 
@@ -262,10 +248,7 @@ Support for advanced features is described in the next table
 API (PyTorch)
 -------------
 
-.. autoclass:: skrl.agents.torch.a2c.A2C_CFG
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.agents.torch.a2c.A2C_DEFAULT_CONFIG
 
 .. autoclass:: skrl.agents.torch.a2c.A2C
     :undoc-members:
@@ -286,10 +269,7 @@ API (PyTorch)
 API (JAX)
 ---------
 
-.. autoclass:: skrl.agents.jax.a2c.A2C_CFG
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.agents.jax.a2c.A2C_DEFAULT_CONFIG
 
 .. autoclass:: skrl.agents.jax.a2c.A2C
     :undoc-members:

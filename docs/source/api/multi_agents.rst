@@ -1,5 +1,3 @@
-:tocdepth: 4
-
 Multi-agents
 ============
 
@@ -21,15 +19,12 @@ Multi-agents are autonomous entities that interact with the environment to learn
     * - Multi-agents
       - .. centered:: |_4| |pytorch| |_4|
       - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
     * - :doc:`Independent Proximal Policy Optimization <multi_agents/ippo>` (**IPPO**)
       - .. centered:: :math:`\blacksquare`
       - .. centered:: :math:`\blacksquare`
-      - .. centered:: :math:`\square`
     * - :doc:`Multi-Agent Proximal Policy Optimization <multi_agents/mappo>` (**MAPPO**)
       - .. centered:: :math:`\blacksquare`
       - .. centered:: :math:`\blacksquare`
-      - .. centered:: :math:`\square`
 
 Base class
 ----------
@@ -73,17 +68,7 @@ Basic inheritance usage
 API (PyTorch)
 ^^^^^^^^^^^^^
 
-.. autoclass:: skrl.multi_agents.torch.MultiAgentCfg
-    :show-inheritance:
-    :inherited-members:
-    :members:
-
-.. autoclass:: skrl.multi_agents.torch.ExperimentCfg
-    :show-inheritance:
-    :inherited-members:
-    :members:
-
-.. autoclass:: skrl.multi_agents.torch.MultiAgent
+.. autoclass:: skrl.multi_agents.torch.base.MultiAgent
     :undoc-members:
     :show-inheritance:
     :inherited-members:
@@ -99,17 +84,7 @@ API (PyTorch)
 API (JAX)
 ^^^^^^^^^
 
-.. autoclass:: skrl.multi_agents.jax.MultiAgentCfg
-    :show-inheritance:
-    :inherited-members:
-    :members:
-
-.. autoclass:: skrl.multi_agents.jax.ExperimentCfg
-    :show-inheritance:
-    :inherited-members:
-    :members:
-
-.. autoclass:: skrl.multi_agents.jax.MultiAgent
+.. autoclass:: skrl.multi_agents.jax.base.MultiAgent
     :undoc-members:
     :show-inheritance:
     :inherited-members:

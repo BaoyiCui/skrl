@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 .. _models_multivariate_gaussian:
 
 Multivariate Gaussian model

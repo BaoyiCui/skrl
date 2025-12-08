@@ -1,1 +1,1 @@
-from skrl.multi_agents.jax.base import ExperimentCfg, MultiAgent, MultiAgentCfg
+from skrl.multi_agents.jax.base import MultiAgent

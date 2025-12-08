@@ -1,1 +1,1 @@
-from skrl.agents.jax.base import Agent, AgentCfg, ExperimentCfg
+from skrl.agents.jax.base import Agent

@@ -1,9 +1,9 @@
 [project]
 name = "skrl"
-version = "2.0.0"
+version = "1.4.3"
 description = "Modular and flexible library for reinforcement learning on PyTorch and JAX"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 license = {text = "MIT License"}
 authors = [
   {name = "Toni-SM"},
@@ -29,7 +29,7 @@ dependencies = [
 ]
 [project.optional-dependencies]
 torch = [
-  "torch>=1.11",
+  "torch>=1.10",
 ]
 jax = [
   "jax>=0.4.31",
@@ -37,23 +37,18 @@ jax = [
   "flax>=0.9.0",
   "optax",
 ]
-warp = [
-  "warp-lang>=1.8.1",
-]
 all = [
-  "torch>=1.11",
+  "torch>=1.10",
   "jax>=0.4.31",
   "jaxlib>=0.4.31",
   "flax>=0.9.0",
   "optax",
-  "warp-lang>=1.8.1",
 ]
 tests = [
   "pytest",
   "pytest-html",
   "pytest-cov",
   "hypothesis",
-  "pyyaml",
 ]
 # urls
 [project.urls]
@@ -63,11 +58,6 @@ tests = [
 "Bug Reports" = "https://github.com/Toni-SM/skrl/issues"
 "Say Thanks!" = "https://github.com/Toni-SM"
 "Source" = "https://github.com/Toni-SM/skrl"
-
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["skrl"]
 
 
 [tool.black]
@@ -103,7 +93,6 @@ known_framework = [
   "flax",
   "optax",
   "numpy",
-  "warp",
 ]
 sections = [
   "FUTURE",

@@ -1,3 +1,5 @@
+from typing import Union
+
 import hypothesis
 import hypothesis.strategies as st
 import pytest
@@ -12,7 +14,7 @@ from skrl import _Config, config
 
 
 @pytest.mark.parametrize("device", [None, "cpu", "cuda", "cuda:0", "cuda:10", "edge-case"])
-def test_parse_device(capsys, device):
+def test_parse_device(capsys, device: Union[str, None]):
     target_device = None
     if device in [None, "edge-case"]:
         target_device = jax.devices()[0]
@@ -30,7 +32,7 @@ def test_parse_device(capsys, device):
 
 
 @pytest.mark.parametrize("device", [None, "cpu", "cuda", "cuda:0", "cuda:10", "edge-case"])
-def test_device(capsys, device):
+def test_device(capsys, device: Union[str, None]):
     target_device = None
     if device in [None, "edge-case"]:
         target_device = jax.devices()[0]
@@ -72,9 +74,7 @@ def test_distributed(capsys, local_rank: int, rank: int, world_size: int):
     assert config.jax._device == f"cuda:{local_rank}"
 
 
-@hypothesis.given(
-    key0=st.integers(min_value=0, max_value=2**32 - 1), key1=st.integers(min_value=0, max_value=2**32 - 1)
-)
+@hypothesis.given(key0=st.integers(min_value=0, max_value=2**32), key1=st.integers(min_value=0, max_value=2**32))
 @hypothesis.settings(
     suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture],
     deadline=None,

@@ -1,2 +1,1 @@
-from skrl.agents.jax.cem.cem import CEM
-from skrl.agents.jax.cem.cem_cfg import CEM_CFG
+from skrl.agents.jax.cem.cem import CEM, CEM_DEFAULT_CONFIG

@@ -1,5 +1,3 @@
-:tocdepth: 4
-
 Random seed
 ===========
 

@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 Step trainer
 ============
 
@@ -54,17 +52,10 @@ Usage
 Configuration
 -------------
 
-.. list-table::
-    :header-rows: 1
-
-    * - Dataclass
-      - .. centered:: |_4| |pytorch| |_4|
-      - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
-    * - ``StepTrainerCfg``
-      - :py:class:`~skrl.trainers.torch.StepTrainerCfg`
-      - :py:class:`~skrl.trainers.jax.StepTrainerCfg`
-      -
+.. literalinclude:: ../../../../skrl/trainers/torch/step.py
+    :language: python
+    :start-after: [start-config-dict-torch]
+    :end-before: [end-config-dict-torch]
 
 .. raw:: html
 
@@ -73,12 +64,9 @@ Configuration
 API (PyTorch)
 -------------
 
-.. autoclass:: skrl.trainers.torch.StepTrainerCfg
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.trainers.torch.step.STEP_TRAINER_DEFAULT_CONFIG
 
-.. autoclass:: skrl.trainers.torch.StepTrainer
+.. autoclass:: skrl.trainers.torch.step.StepTrainer
     :undoc-members:
     :show-inheritance:
     :inherited-members:
@@ -91,12 +79,9 @@ API (PyTorch)
 API (JAX)
 ---------
 
-.. autoclass:: skrl.trainers.jax.StepTrainerCfg
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.trainers.jax.step.STEP_TRAINER_DEFAULT_CONFIG
 
-.. autoclass:: skrl.trainers.jax.StepTrainer
+.. autoclass:: skrl.trainers.jax.step.StepTrainer
     :undoc-members:
     :show-inheritance:
     :inherited-members:

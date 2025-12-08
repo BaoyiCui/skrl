@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 Cross-Entropy Method (CEM)
 ==========================
 
@@ -98,17 +96,10 @@ Usage
 Configuration and hyperparameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. list-table::
-    :header-rows: 1
-
-    * - Dataclass
-      - .. centered:: |_4| |pytorch| |_4|
-      - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
-    * - ``CEM_CFG``
-      - :py:class:`~skrl.agents.torch.cem.CEM_CFG`
-      - :py:class:`~skrl.agents.jax.cem.CEM_CFG`
-      -
+.. literalinclude:: ../../../../skrl/agents/torch/cem/cem.py
+    :language: python
+    :start-after: [start-config-dict-torch]
+    :end-before: [end-config-dict-torch]
 
 .. raw:: html
 
@@ -180,20 +171,16 @@ Support for advanced features is described in the next table
       - Support and remarks
       - .. centered:: |_4| |pytorch| |_4|
       - .. centered:: |_4| |jax| |_4|
-      - .. centered:: |_4| |warp| |_4|
     * - RNN support
       - \-
-      - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
     * - Mixed precision
       - Automatic mixed precision
       - .. centered:: :math:`\blacksquare`
       - .. centered:: :math:`\square`
-      - .. centered:: :math:`\square`
     * - Distributed
       - \-
-      - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
       - .. centered:: :math:`\square`
 
@@ -204,10 +191,7 @@ Support for advanced features is described in the next table
 API (PyTorch)
 -------------
 
-.. autoclass:: skrl.agents.torch.cem.CEM_CFG
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.agents.torch.cem.CEM_DEFAULT_CONFIG
 
 .. autoclass:: skrl.agents.torch.cem.CEM
     :undoc-members:
@@ -222,10 +206,7 @@ API (PyTorch)
 API (JAX)
 ---------
 
-.. autoclass:: skrl.agents.jax.cem.CEM_CFG
-    :show-inheritance:
-    :inherited-members:
-    :members:
+.. autoclass:: skrl.agents.jax.cem.CEM_DEFAULT_CONFIG
 
 .. autoclass:: skrl.agents.jax.cem.CEM
     :undoc-members:

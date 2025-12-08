@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from abc import ABC, abstractmethod
+from typing import Optional, Tuple, Union
 
 import jax
 import numpy as np
@@ -8,22 +6,40 @@ import numpy as np
 from skrl import config
 
 
-class Noise(ABC):
-    def __init__(self, *, device: str | jax.Device | None = None) -> None:
-        """Base noise class for implementing custom noises.
+class Noise:
+    def __init__(self, device: Optional[Union[str, jax.Device]] = None) -> None:
+        """Base class representing a noise
 
-        :param device: Data allocation and computation device. If not specified, the default device will be used.
+        :param device: Device on which a tensor/array is or will be allocated (default: ``None``).
+                       If None, the device will be either ``"cuda"`` if available or ``"cpu"``
+        :type device: str or jax.Device, optional
+
+        Custom noises should override the ``sample`` method::
+
+            import jax
+            from skrl.resources.noises.jax import Noise
+
+            class CustomNoise(Noise):
+                def __init__(self, device=None):
+                    super().__init__(device)
+
+                def sample(self, size):
+                    return jax.random.uniform(jax.random.PRNGKey(0), size)
         """
+        self._jax = config.jax.backend == "jax"
+
         self.device = config.jax.parse_device(device)
 
-    def sample_like(self, tensor: jax.Array) -> jax.Array:
-        """Sample noise with the same size (shape) as the input tensor.
+    def sample_like(self, tensor: Union[np.ndarray, jax.Array]) -> Union[np.ndarray, jax.Array]:
+        """Sample a noise with the same size (shape) as the input tensor
 
-        This method will call the sampling method as follows ``.sample(tensor.shape)``.
+        This method will call the sampling method as follows ``.sample(tensor.shape)``
 
-        :param tensor: Input tensor used to determine output tensor size (shape).
+        :param tensor: Input tensor used to determine output tensor size (shape)
+        :type tensor: np.ndarray or jax.Array
 
-        :return: Sampled noise.
+        :return: Sampled noise
+        :rtype: np.ndarray or jax.Array
 
         Example::
 
@@ -35,14 +51,15 @@ class Noise(ABC):
         """
         return self.sample(tensor.shape)
 
-    @abstractmethod
-    def sample(self, size: list[int]) -> jax.Array:
-        """Sample noise.
+    def sample(self, size: Tuple[int]) -> Union[np.ndarray, jax.Array]:
+        """Noise sampling method to be implemented by the inheriting classes
 
-        :param size: Noise shape.
+        :param size: Shape of the sampled tensor
+        :type size: tuple or list of int
 
-        :return: Sampled noise.
+        :raises NotImplementedError: The method is not implemented by the inheriting classes
 
-        :raises NotImplementedError: This method must be implemented by subclasses.
+        :return: Sampled noise
+        :rtype: np.ndarray or jax.Array
         """
         raise NotImplementedError("The sampling method (.sample()) is not implemented")

@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 .. _gaussian-noise:
 
 Gaussian noise
@@ -45,14 +43,6 @@ The noise usage is defined in each agent's configuration dictionary. A noise ins
             :start-after: [jax-start-gaussian]
             :end-before: [jax-end-gaussian]
 
-    .. group-tab:: |_4| |warp| |_4|
-
-        .. literalinclude:: ../../../snippets/noises.py
-            :language: python
-            :emphasize-lines: 1, 4
-            :start-after: [warp-start-gaussian]
-            :end-before: [warp-end-gaussian]
-
 .. raw:: html
 
     <br>
@@ -75,20 +65,6 @@ API (JAX)
 ---------
 
 .. autoclass:: skrl.resources.noises.jax.gaussian.GaussianNoise
-    :undoc-members:
-    :show-inheritance:
-    :inherited-members:
-    :private-members: _update
-    :members:
-
-.. raw:: html
-
-    <br>
-
-API (Warp)
-----------
-
-.. autoclass:: skrl.resources.noises.warp.gaussian.GaussianNoise
     :undoc-members:
     :show-inheritance:
     :inherited-members:

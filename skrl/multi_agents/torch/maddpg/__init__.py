@@ -1,0 +1,1 @@
+from skrl.multi_agents.torch.maddpg.maddpg import MADDPG, MADDPG_DEFAULT_CONFIG

@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 .. _models_categorical:
 
 Categorical model

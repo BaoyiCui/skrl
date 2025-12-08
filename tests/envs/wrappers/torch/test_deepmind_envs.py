@@ -15,10 +15,6 @@ def test_env(capsys: pytest.CaptureFixture):
     num_envs = 1
     action = torch.ones((num_envs, 1))
 
-    # check wrapper definition
-    with pytest.raises(AttributeError, match="'NoneType' object has no attribute 'observation_spec'"):
-        wrap_env(None, "dm"), DeepMindWrapper
-
     # load wrap the environment
     try:
         from dm_control import suite
@@ -50,13 +46,10 @@ def test_env(capsys: pytest.CaptureFixture):
     # check methods
     for _ in range(2):
         observation, info = env.reset()
-        state = env.state()
         assert isinstance(observation, torch.Tensor) and observation.shape == torch.Size([num_envs, 3])
         assert isinstance(info, Mapping)
-        assert state is None
         for _ in range(3):
             observation, reward, terminated, truncated, info = env.step(action)
-            state = env.state()
             if not is_running_on_github_actions():
                 env.render()
             assert isinstance(observation, torch.Tensor) and observation.shape == torch.Size([num_envs, 3])
@@ -64,6 +57,5 @@ def test_env(capsys: pytest.CaptureFixture):
             assert isinstance(terminated, torch.Tensor) and terminated.shape == torch.Size([num_envs, 1])
             assert isinstance(truncated, torch.Tensor) and truncated.shape == torch.Size([num_envs, 1])
             assert isinstance(info, Mapping)
-            assert state is None
 
     env.close()

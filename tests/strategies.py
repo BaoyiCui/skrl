@@ -3,10 +3,6 @@ import hypothesis.strategies as st
 import gymnasium
 
 
-# Warp array's maximum number of dimensions is 4
-MAX_DIM = 3
-
-
 @st.composite
 def gymnasium_space_stategy(draw, space_type: str = "", remaining_iterations: int = 5) -> gymnasium.spaces.Space:
     if not space_type:
@@ -16,13 +12,13 @@ def gymnasium_space_stategy(draw, space_type: str = "", remaining_iterations: in
         space_type = "Box"
 
     if space_type == "Box":
-        shape = draw(st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=MAX_DIM))
+        shape = draw(st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=5))
         return gymnasium.spaces.Box(low=-1, high=1, shape=shape)
     elif space_type == "Discrete":
         n = draw(st.integers(min_value=1, max_value=5))
         return gymnasium.spaces.Discrete(n)
     elif space_type == "MultiDiscrete":
-        nvec = draw(st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=MAX_DIM))
+        nvec = draw(st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=5))
         return gymnasium.spaces.MultiDiscrete(nvec)
     elif space_type == "Dict":
         remaining_iterations -= 1
@@ -50,13 +46,13 @@ def gym_space_stategy(draw, space_type: str = "", remaining_iterations: int = 5)
         space_type = "Box"
 
     if space_type == "Box":
-        shape = draw(st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=MAX_DIM))
+        shape = draw(st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=5))
         return gym.spaces.Box(low=-1, high=1, shape=shape)
     elif space_type == "Discrete":
         n = draw(st.integers(min_value=1, max_value=5))
         return gym.spaces.Discrete(n)
     elif space_type == "MultiDiscrete":
-        nvec = draw(st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=MAX_DIM))
+        nvec = draw(st.lists(st.integers(min_value=1, max_value=5), min_size=1, max_size=5))
         return gym.spaces.MultiDiscrete(nvec)
     elif space_type == "Dict":
         remaining_iterations -= 1

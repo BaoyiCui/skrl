@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 .. _models_gaussian:
 
 Gaussian model
@@ -40,14 +38,6 @@ skrl provides a Python mixin (:literal:`GaussianMixin`) to assist in the creatio
             :emphasize-lines: 1, 4-5
             :start-after: [start-definition-jax]
             :end-before: [end-definition-jax]
-
-    .. group-tab:: |_4| |warp| |_4|
-
-        .. literalinclude:: ../../snippets/gaussian_model.py
-            :language: python
-            :emphasize-lines: 1, 4-5
-            :start-after: [start-definition-warp]
-            :end-before: [end-definition-warp]
 
 .. raw:: html
 
@@ -136,17 +126,6 @@ Usage
                             :language: python
                             :start-after: [start-mlp-compact-jax]
                             :end-before: [end-mlp-compact-jax]
-
-            .. group-tab:: |_4| |warp| |_4|
-
-                .. tabs::
-
-                    .. group-tab:: nn.Sequential
-
-                        .. literalinclude:: ../../snippets/gaussian_model.py
-                            :language: python
-                            :start-after: [start-mlp-sequential-warp]
-                            :end-before: [end-mlp-sequential-warp]
 
     .. tab:: CNN
 
@@ -414,16 +393,5 @@ API (JAX)
 ---------
 
 .. autoclass:: skrl.models.jax.gaussian.GaussianMixin
-    :show-inheritance:
-    :members:
-
-.. raw:: html
-
-    <br>
-
-API (Warp)
-----------
-
-.. autoclass:: skrl.models.warp.gaussian.GaussianMixin
     :show-inheritance:
     :members:

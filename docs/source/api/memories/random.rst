@@ -1,5 +1,3 @@
-:tocdepth: 3
-
 Random memory
 =============
 
@@ -30,14 +28,6 @@ Usage
             :start-after: [start-random-jax]
             :end-before: [end-random-jax]
 
-    .. group-tab:: |_4| |warp| |_4|
-
-        .. literalinclude:: ../../snippets/memories.py
-            :language: python
-            :emphasize-lines: 2, 5
-            :start-after: [start-random-warp]
-            :end-before: [end-random-warp]
-
 .. raw:: html
 
     <br>
@@ -61,21 +51,6 @@ API (JAX)
 ---------
 
 .. autoclass:: skrl.memories.jax.random.RandomMemory
-    :undoc-members:
-    :show-inheritance:
-    :inherited-members:
-    :members:
-
-    .. automethod:: __len__
-
-.. raw:: html
-
-    <br>
-
-API (Warp)
-----------
-
-.. autoclass:: skrl.memories.warp.random.RandomMemory
     :undoc-members:
     :show-inheritance:
     :inherited-members:

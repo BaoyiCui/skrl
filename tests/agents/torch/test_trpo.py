@@ -2,34 +2,49 @@ import hypothesis
 import hypothesis.strategies as st
 import pytest
 
-import dataclasses
 import gymnasium
 
 import torch
 
 from skrl.agents.torch.trpo import TRPO as Agent
-from skrl.agents.torch.trpo import TRPO_CFG as AgentCfg
+from skrl.agents.torch.trpo import TRPO_DEFAULT_CONFIG as DEFAULT_CONFIG
+from skrl.envs.wrappers.torch import wrap_env
 from skrl.memories.torch import RandomMemory
 from skrl.resources.preprocessors.torch import RunningStandardScaler
 from skrl.resources.schedulers.torch import KLAdaptiveLR
 from skrl.trainers.torch import SequentialTrainer
 from skrl.utils.model_instantiators.torch import deterministic_model, gaussian_model, multivariate_gaussian_model
+from skrl.utils.spaces.torch import sample_space
 
-from ...utilities import SingleAgentEnv, check_config_keys, get_test_mixed_precision, is_device_available
+from ...utilities import BaseEnv, get_test_mixed_precision, is_device_available
+
+
+class Env(BaseEnv):
+    def _sample_observation(self):
+        return sample_space(self.observation_space, batch_size=self.num_envs, backend="numpy")
+
+
+def _check_agent_config(config, default_config):
+    for k in config.keys():
+        assert k in default_config
+        if k == "experiment":
+            _check_agent_config(config["experiment"], default_config["experiment"])
+    for k in default_config.keys():
+        assert k in config
+        if k == "experiment":
+            _check_agent_config(config["experiment"], default_config["experiment"])
 
 
 @hypothesis.given(
     num_envs=st.integers(min_value=1, max_value=5),
-    # agent config
     rollouts=st.integers(min_value=1, max_value=5),
     learning_epochs=st.integers(min_value=1, max_value=5),
     mini_batches=st.integers(min_value=1, max_value=5),
     discount_factor=st.floats(min_value=0, max_value=1),
     lambda_=st.floats(min_value=0, max_value=1),
-    learning_rate=st.floats(min_value=1.0e-10, max_value=1),
+    value_learning_rate=st.floats(min_value=1.0e-10, max_value=1),
     learning_rate_scheduler=st.one_of(st.none(), st.just(KLAdaptiveLR), st.just(torch.optim.lr_scheduler.ConstantLR)),
     learning_rate_scheduler_kwargs_value=st.floats(min_value=0.1, max_value=1),
-    observation_preprocessor=st.one_of(st.none(), st.just(RunningStandardScaler)),
     state_preprocessor=st.one_of(st.none(), st.just(RunningStandardScaler)),
     value_preprocessor=st.one_of(st.none(), st.just(RunningStandardScaler)),
     random_timesteps=st.just(0),
@@ -48,17 +63,14 @@ from ...utilities import SingleAgentEnv, check_config_keys, get_test_mixed_preci
 @hypothesis.settings(
     suppress_health_check=[hypothesis.HealthCheck.function_scoped_fixture],
     deadline=None,
-    max_examples=15,
     phases=[hypothesis.Phase.explicit, hypothesis.Phase.reuse, hypothesis.Phase.generate],
 )
 @pytest.mark.parametrize("device", ["cpu", "cuda:0"])
-@pytest.mark.parametrize("asymmetric", [True, False])
 @pytest.mark.parametrize("policy_structure", ["GaussianMixin", "MultivariateGaussianMixin"])
 def test_agent(
     capsys,
     device,
     num_envs,
-    asymmetric,
     # model config
     policy_structure,
     # agent config
@@ -67,10 +79,9 @@ def test_agent(
     mini_batches,
     discount_factor,
     lambda_,
-    learning_rate,
+    value_learning_rate,
     learning_rate_scheduler,
     learning_rate_scheduler_kwargs_value,
-    observation_preprocessor,
     state_preprocessor,
     value_preprocessor,
     random_timesteps,
@@ -91,64 +102,43 @@ def test_agent(
         pytest.skip(f"Device {device} not available")
 
     # spaces
-    observation_space = gymnasium.spaces.Box(low=-1, high=1, shape=(4,))
-    state_space = gymnasium.spaces.Box(low=-1, high=1, shape=(5,)) if asymmetric else None
+    observation_space = gymnasium.spaces.Box(low=-1, high=1, shape=(5,))
     action_space = gymnasium.spaces.Box(low=-1, high=1, shape=(3,))
 
     # env
-    env = SingleAgentEnv(
-        observation_space=observation_space,
-        state_space=state_space,
-        action_space=action_space,
-        num_envs=num_envs,
-        device=device,
-        ml_framework="torch",
-    )
+    env = wrap_env(Env(observation_space, action_space, num_envs, device), wrapper="gymnasium")
 
     # models
-    network = {
-        "policy": [
-            {
-                "name": "net",
-                "input": "OBSERVATIONS",
-                "layers": [5],
-                "activations": "relu",
-            }
-        ],
-        "value": [
-            {
-                "name": "net",
-                "input": "STATES" if asymmetric else "OBSERVATIONS",
-                "layers": [5],
-                "activations": "relu",
-            }
-        ],
-    }
+    network = [
+        {
+            "name": "net",
+            "input": "STATES",
+            "layers": [64, 64],
+            "activations": "elu",
+        }
+    ]
     models = {}
     if policy_structure == "GaussianMixin":
         models["policy"] = gaussian_model(
             observation_space=env.observation_space,
-            state_space=env.state_space,
             action_space=env.action_space,
             device=env.device,
-            network=network["policy"],
+            network=network,
             output="ACTIONS",
         )
     elif policy_structure == "MultivariateGaussianMixin":
         models["policy"] = multivariate_gaussian_model(
             observation_space=env.observation_space,
-            state_space=env.state_space,
             action_space=env.action_space,
             device=env.device,
-            network=network["policy"],
+            network=network,
             output="ACTIONS",
         )
     models["value"] = deterministic_model(
         observation_space=env.observation_space,
-        state_space=env.state_space,
         action_space=env.action_space,
         device=env.device,
-        network=network["value"],
+        network=network,
         output="ONE",
     )
     for role, model in models.items():
@@ -163,14 +153,12 @@ def test_agent(
         "learning_epochs": learning_epochs,
         "mini_batches": mini_batches,
         "discount_factor": discount_factor,
-        "lambda_": lambda_,
-        "learning_rate": learning_rate,
+        "lambda": lambda_,
+        "value_learning_rate": value_learning_rate,
         "learning_rate_scheduler": learning_rate_scheduler,
         "learning_rate_scheduler_kwargs": {},
-        "observation_preprocessor": observation_preprocessor,
-        "observation_preprocessor_kwargs": {"size": env.observation_space, "device": env.device},
         "state_preprocessor": state_preprocessor,
-        "state_preprocessor_kwargs": {"size": env.state_space, "device": env.device},
+        "state_preprocessor_kwargs": {"size": env.observation_space, "device": env.device},
         "value_preprocessor": value_preprocessor,
         "value_preprocessor_kwargs": {"size": 1, "device": env.device},
         "random_timesteps": random_timesteps,
@@ -198,14 +186,13 @@ def test_agent(
     cfg["learning_rate_scheduler_kwargs"][
         "kl_threshold" if learning_rate_scheduler is KLAdaptiveLR else "factor"
     ] = learning_rate_scheduler_kwargs_value
-    check_config_keys(cfg, dataclasses.asdict(AgentCfg()))
-    check_config_keys(cfg["experiment"], dataclasses.asdict(AgentCfg().experiment))
+    _check_agent_config(cfg, DEFAULT_CONFIG)
+    _check_agent_config(cfg["experiment"], DEFAULT_CONFIG["experiment"])
     agent = Agent(
         models=models,
         memory=memory,
         cfg=cfg,
         observation_space=env.observation_space,
-        state_space=env.state_space,
         action_space=env.action_space,
         device=env.device,
     )
