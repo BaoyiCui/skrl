@@ -1,0 +1,369 @@
+env:
+  viewer:
+    eye:
+    - 7.5
+    - 7.5
+    - 7.5
+    lookat:
+    - 0.0
+    - 0.0
+    - 0.0
+    cam_prim_path: /OmniverseKit_Persp
+    resolution:
+    - 1280
+    - 720
+    origin_type: world
+    env_index: 0
+    asset_name: null
+    body_name: null
+  sim:
+    physics_prim_path: /physicsScene
+    device: cuda:0
+    dt: 0.01
+    render_interval: 2
+    gravity:
+    - 0.0
+    - 0.0
+    - -9.81
+    enable_scene_query_support: false
+    use_fabric: true
+    physx:
+      solver_type: 1
+      min_position_iteration_count: 1
+      max_position_iteration_count: 255
+      min_velocity_iteration_count: 0
+      max_velocity_iteration_count: 255
+      enable_ccd: false
+      enable_stabilization: false
+      enable_enhanced_determinism: false
+      bounce_threshold_velocity: 0.5
+      friction_offset_threshold: 0.04
+      friction_correlation_distance: 0.025
+      gpu_max_rigid_contact_count: 8388608
+      gpu_max_rigid_patch_count: 163840
+      gpu_found_lost_pairs_capacity: 2097152
+      gpu_found_lost_aggregate_pairs_capacity: 33554432
+      gpu_total_aggregate_pairs_capacity: 2097152
+      gpu_collision_stack_size: 67108864
+      gpu_heap_capacity: 67108864
+      gpu_temp_buffer_capacity: 16777216
+      gpu_max_num_partitions: 8
+      gpu_max_soft_body_contacts: 1048576
+      gpu_max_particle_contacts: 1048576
+      solve_articulation_contact_last: false
+    physics_material:
+      func: isaaclab.sim.spawners.materials.physics_materials:spawn_rigid_body_material
+      static_friction: 0.5
+      dynamic_friction: 0.5
+      restitution: 0.0
+      friction_combine_mode: average
+      restitution_combine_mode: average
+      compliant_contact_stiffness: 0.0
+      compliant_contact_damping: 0.0
+    render:
+      enable_translucency: null
+      enable_reflections: null
+      enable_global_illumination: null
+      antialiasing_mode: null
+      enable_dlssg: null
+      enable_dl_denoiser: null
+      dlss_mode: null
+      enable_direct_lighting: null
+      samples_per_pixel: null
+      enable_shadows: null
+      enable_ambient_occlusion: null
+      dome_light_upper_lower_strategy: null
+      carb_settings: null
+      rendering_mode: null
+    create_stage_in_memory: false
+  ui_window_class_type: comp.tasks.direct.comp_marl.comp_marl_env_cfg:PEMarlEnvWindow
+  seed: null
+  decimation: 2
+  is_finite_horizon: false
+  episode_length_s: 20.0
+  scene:
+    num_envs: 100
+    env_spacing: 10.0
+    lazy_sensor_update: true
+    replicate_physics: true
+    filter_collisions: true
+    clone_in_fabric: true
+  events: null
+  observation_spaces:
+    pursuer: '{"type": "python", "space": "Box", "value": 13}'
+    evader: '{"type": "python", "space": "Box", "value": 13}'
+  num_observations: null
+  state_space: '{"type": "python", "space": "Box", "value": -1}'
+  num_states: null
+  observation_noise_model: null
+  action_spaces:
+    pursuer: '{"type": "python", "space": "Box", "value": 3}'
+    evader: '{"type": "python", "space": "Box", "value": 3}'
+  num_actions: null
+  action_noise_model: null
+  possible_agents:
+  - pursuer
+  - evader
+  xr: null
+  log_dir: null
+  pursuer_cfg:
+    class_type: isaaclab.assets.rigid_object.rigid_object:RigidObject
+    prim_path: /World/envs/env_.*/Pursuer
+    spawn:
+      func: isaaclab.sim.spawners.from_files.from_files:spawn_from_usd
+      visible: true
+      semantic_tags: null
+      copy_from_source: true
+      mass_props: null
+      deformable_props: null
+      rigid_props:
+        rigid_body_enabled: null
+        kinematic_enabled: null
+        disable_gravity: false
+        linear_damping: null
+        angular_damping: null
+        max_linear_velocity: 30.0
+        max_angular_velocity: 1440.0
+        max_depenetration_velocity: 10.0
+        max_contact_impulse: null
+        enable_gyroscopic_forces: true
+        retain_accelerations: null
+        solver_position_iteration_count: null
+        solver_velocity_iteration_count: null
+        sleep_threshold: null
+        stabilization_threshold: null
+      collision_props: null
+      activate_contact_sensors: false
+      scale: null
+      articulation_props: null
+      fixed_tendons_props: null
+      spatial_tendons_props: null
+      joint_drive_props: null
+      visual_material_path: material
+      visual_material: null
+      usd_path: /home/baoyicui/Workspaces/CompetitiveMARL/source/comp/comp/tasks/direct/comp_marl/assets/./assets/x2.usd
+      variants: null
+    init_state:
+      pos:
+      - 0.0
+      - 0.0
+      - 0.5
+      rot:
+      - 1.0
+      - 0.0
+      - 0.0
+      - 0.0
+      lin_vel:
+      - 0.0
+      - 0.0
+      - 0.0
+      ang_vel:
+      - 0.0
+      - 0.0
+      - 0.0
+    collision_group: 0
+    debug_vis: false
+  evader_cfg:
+    class_type: isaaclab.assets.rigid_object.rigid_object:RigidObject
+    prim_path: /World/envs/env_.*/Evader
+    spawn:
+      func: isaaclab.sim.spawners.from_files.from_files:spawn_from_usd
+      visible: true
+      semantic_tags: null
+      copy_from_source: true
+      mass_props: null
+      deformable_props: null
+      rigid_props:
+        rigid_body_enabled: null
+        kinematic_enabled: null
+        disable_gravity: false
+        linear_damping: null
+        angular_damping: null
+        max_linear_velocity: 30.0
+        max_angular_velocity: 1440.0
+        max_depenetration_velocity: 10.0
+        max_contact_impulse: null
+        enable_gyroscopic_forces: true
+        retain_accelerations: null
+        solver_position_iteration_count: null
+        solver_velocity_iteration_count: null
+        sleep_threshold: null
+        stabilization_threshold: null
+      collision_props: null
+      activate_contact_sensors: false
+      scale: null
+      articulation_props: null
+      fixed_tendons_props: null
+      spatial_tendons_props: null
+      joint_drive_props: null
+      visual_material_path: material
+      visual_material: null
+      usd_path: /home/baoyicui/Workspaces/CompetitiveMARL/source/comp/comp/tasks/direct/comp_marl/assets/./assets/x2.usd
+      variants: null
+    init_state:
+      pos:
+      - 0.0
+      - 0.0
+      - 0.5
+      rot:
+      - 1.0
+      - 0.0
+      - 0.0
+      - 0.0
+      lin_vel:
+      - 0.0
+      - 0.0
+      - 0.0
+      ang_vel:
+      - 0.0
+      - 0.0
+      - 0.0
+    collision_group: 0
+    debug_vis: false
+  dt: 0.01
+  debug_vis: false
+  env_spacing: 10.0
+  max_vel:
+    pursuer: 3.0
+    evader: 0.5
+  init_pitch_range:
+  - -0.0
+  - 0.0
+  init_roll_range:
+  - -0.0
+  - 0.0
+  init_yaw_range:
+  - 0.0
+  - 0.0
+  terrain:
+    class_type: isaaclab.terrains.terrain_importer:TerrainImporter
+    collision_group: -1
+    prim_path: /World/ground
+    num_envs: 1
+    terrain_type: plane
+    terrain_generator: null
+    usd_path: null
+    env_spacing: 10.0
+    visual_material:
+      func: isaaclab.sim.spawners.materials.visual_materials:spawn_preview_surface
+      diffuse_color:
+      - 0.0
+      - 0.0
+      - 0.0
+      emissive_color:
+      - 0.0
+      - 0.0
+      - 0.0
+      roughness: 0.5
+      metallic: 0.0
+      opacity: 1.0
+    physics_material:
+      func: isaaclab.sim.spawners.materials.physics_materials:spawn_rigid_body_material
+      static_friction: 1.0
+      dynamic_friction: 1.0
+      restitution: 0.0
+      friction_combine_mode: multiply
+      restitution_combine_mode: multiply
+      compliant_contact_stiffness: 0.0
+      compliant_contact_damping: 0.0
+    max_init_terrain_level: null
+    debug_vis: false
+  thrust_to_weight: 4.0
+  max_moment: 10.0
+  capture_distance: 1.0
+  z_min: 1.0
+  z_max: 10.0
+  max_tilt_rad: 1.3089969389957472
+  reward_scale_distance: 10.0
+  reward_scale_timeout: 0.0
+  reward_scale_captured: 6.0
+  reward_scale_actions_oob: 0.1
+  reward_scale_oob: 6.0
+  reward_scale_smooth: 0.0
+  Kp0: 0.0
+  Kp1: 0.0
+  Kp2: 0.0
+  Kv0: 2.0
+  Kv1: 2.0
+  Kv2: 2.0
+  KAttR: 2.0
+  KAttP: 2.0
+  KAttY: 2.0
+  KAngR: 1.0
+  KAngP: 1.0
+  KAngY: 1.0
+agent:
+  seed: 42
+  models:
+    separate: true
+    policy:
+      class: GaussianMixin
+      clip_actions: false
+      clip_log_std: true
+      min_log_std: -20.0
+      max_log_std: 2.0
+      initial_log_std: 0.0
+      network:
+      - name: net
+        input: OBSERVATIONS
+        layers:
+        - 256
+        - 256
+        activations: elu
+      output: ACTIONS
+    value:
+      class: DeterministicMixin
+      clip_actions: false
+      network:
+      - name: net
+        input: STATES
+        layers:
+        - 256
+        - 256
+        activations: elu
+      output: ONE
+  memory:
+    class: RandomMemory
+    memory_size: -1
+  agent:
+    class: MAPPO
+    rollouts: 100
+    learning_epochs: 8
+    mini_batches: 2
+    discount_factor: 0.99
+    lambda: 0.95
+    learning_rate: 0.001
+    learning_rate_scheduler: torch.optim.lr_scheduler.LinearLR
+    learning_rate_scheduler_kwargs:
+      start_factor: 1.0
+      end_factor: 0.01
+      total_iters: 1000
+    state_preprocessor: RunningStandardScaler
+    state_preprocessor_kwargs: null
+    shared_state_preprocessor: RunningStandardScaler
+    shared_state_preprocessor_kwargs: null
+    value_preprocessor: RunningStandardScaler
+    value_preprocessor_kwargs: null
+    random_timesteps: 0
+    learning_starts: 0
+    grad_norm_clip: 1.0
+    ratio_clip: 0.2
+    value_clip: 0.2
+    clip_predicted_values: true
+    entropy_loss_scale: 0.0
+    value_loss_scale: 1.0
+    kl_threshold: 0.0
+    rewards_shaper_scale: 1.0
+    time_limit_bootstrap: false
+    mixed_precision: false
+    experiment:
+      directory: pursuit-evasion
+      experiment_name: ''
+      write_interval: auto
+      checkpoint_interval: auto
+      store_separately: false
+      wandb: true
+  trainer:
+    class: SequentialTrainer
+    timesteps: '1e6'
+    environment_info: log

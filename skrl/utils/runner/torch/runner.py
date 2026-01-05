@@ -149,6 +149,9 @@ class Runner:
         elif name == "sequentialtrainer":
             from skrl.trainers.torch import SequentialTrainer as component
 
+        elif name== "alternatingtrainer":
+            from skrl.trainers.torch import AlternatingTrainer as component
+
         if component is None:
             raise ValueError(f"Unknown component '{name}' in runner cfg")
         return component
@@ -324,7 +327,7 @@ class Runner:
         env: Union[Wrapper, MultiAgentEnvWrapper],
         cfg: Mapping[str, Any],
         models: Mapping[str, Mapping[str, Model]],
-    ) -> Agent:
+    ) -> Agent | list[Agent]:
         """Generate agent instance according to the environment specification and the given config and models
 
         :param env: Wrapped environment
@@ -467,6 +470,51 @@ class Runner:
                 "shared_observation_spaces": state_spaces,
                 "possible_agents": possible_agents,
             }
+
+        elif agent_class in ["appo"]:
+            # 返回多个独立的 PPO 实例
+            # 用于交替训练 Self-Play / Fictitious Play
+            agents_list = []
+            ppo_cls = self._component("PPO")    # TODO: 这里应该支持其他可扩展算法
+            for agent_id in possible_agents:
+                agent_cfg = self._component("PPO_DEFAULT_CONFIG").copy()
+                agent_cfg.update(self._process_cfg(cfg["agent"]))
+                experiment_name = agent_cfg.get("experiment_name", "")
+                if not experiment_name:
+                    agent_cfg["experiment"]["experiment_name"] = agent_id
+                else:
+                    agent_cfg["experiment"]["experiment_name"] = experiment_name
+
+                # 设置preprocessor的维度
+                agent_cfg.get("state_preprocessor_kwargs", {}).update(
+                    {"size": observation_spaces[agent_id], "device": device}
+                )
+                agent_cfg.get("value_preprocessor_kwargs", {}).update(
+                    {"size": 1, "device": device}
+                )
+                # 处理探索噪声
+                if agent_cfg.get("exploration", {}).get("noise", None):
+                    agent_cfg["exploration"].get("noise_kwargs", {}).update({"device": device})
+                    agent_cfg["exploration"]["noise"] = agent_cfg["exploration"]["noise"](
+                        **agent_cfg["exploration"].get("noise_kwargs", {})
+                    )
+                # 处理平滑正则噪声
+                if agent_cfg.get("smooth_regularization_noise", None):
+                    agent_cfg.get("smooth_regularization_noise_kwargs", {}).update({"device": device})
+                    agent_cfg["smooth_regularization_noise"] = agent_cfg["smooth_regularization_noise"](
+                        **agent_cfg.get("smooth_regularization_noise_kwargs", {})
+                    )
+                # 组装参数
+                agent_kwargs = {
+                    "models": models[agent_id],
+                    "memory": memories[agent_id],
+                    "observation_space": observation_spaces[agent_id],
+                    "action_space": action_spaces[agent_id],
+                }
+                agent = ppo_cls(cfg=agent_cfg, device=device, **agent_kwargs)
+                agents_list.append(agent)
+            return agents_list
+
         return self._component(agent_class)(cfg=agent_cfg, device=device, **agent_kwargs)
 
     def _generate_trainer(
