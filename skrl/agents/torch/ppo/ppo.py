@@ -404,6 +404,10 @@ class PPO(Agent):
 
             return returns, advantages
 
+        # debug
+        if timestep > 25000:
+            pass
+
         # compute returns and advantages
         with torch.no_grad(), torch.autocast(device_type=self._device_type, enabled=self._mixed_precision):
             self.value.train(False)
